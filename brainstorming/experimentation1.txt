@@ -1,0 +1,95 @@
+squared(num: number) = num * num
+
+(vector3) {
+  x: number = 0;
+  y: number = 0;
+  z: number = 0;
+
+  +(other: vector3) = <vector3 x={this.x + other.x} y={this.y + other.y} z={this.z + other.z} />
+  *(scale: number) = <vector3 x={this.x * scale} y={this.y * scale} z={this.z * scale} />
+}
+
+(transformable) {
+  position() = (> "position"-vector3);
+  rotation() = (> "rotation"-vector3);
+  scale() = (> "scale"-vector3);
+}
+
+(shape) ^ (transformable)
+(shape) {
+  collidingWith(other: shape): boolean;
+}
+
+(boxshape) ^ (shape)
+(boxshape) {
+  dimensions() = (> "dimensions"-vector3);
+
+  corners() =
+    <vector3>
+      <"x"-number>(> "dimensions"-vector3 > "x")</>
+      <"y"-number>(> "dimensions"-vector3 > "y")</>
+      <"z"-number>(> "dimensions"-vector3 > "z")</>
+    </>;
+
+  boundsMin: vector3 =
+    vector3:
+      x: (> "position"-vector3 > "x") - (> "dimensions"-vector3 > "x") / 2
+      y: (> "position"-vector3 > "y") - (> "dimensions"-vector3 > "y") / 2
+      z: (> "position"-vector3 > "z") - (> "dimensions"-vector3 > "z") / 2
+
+  boundsMax: vector3 =
+    <vector3>
+      (> "position"-vector3 > "x") + (> "dimensions"-vector3 > "x") / 2
+      (> "position"-vector3 > "y") + (> "dimensions"-vector3 > "y") / 2
+      (> "position"-vector3 > "z") + (> "dimensions"-vector3 > "z") / 2
+    </>;
+
+  contains(point: vector3): boolean =
+    point.x > this.boundsMin.x && point.x < this.boundsMax.x &&
+    point.y > this.boundsMin.y && point.y < this.boundsMax.y &&
+    point.z > this.boundsMin.z && point.z < this.boundsMax.z;
+
+  collidingWith(other: shape): boolean =
+    other is boxshape ? (contains(other.corners)-true)
+}
+
+
+// body v1
+(body) ^ (transformable);
+(body > "static"-boolean) = false;
+(body > "velocity"-vector3);
+(body > "acceleration"-vector3);
+(body > "rotationVelocity"-vector3);
+(body > "rotationAcceleration"-vector3);
+
+nextVelocity("body"-body, "deltaTime"-number) = ("body" > velocity) + ("deltaTime") * ("body" > acceleration);
+nextPosition("body"-body, "deltaTime"-number) = 0.5 + ("deltaTime") * ("body" > velocity) + squared("deltaTime") * ("body" > acceleration);
+
+(body).update("deltaTime"-number) =>
+  (target > "position") := nextPosition( (target), ("deltaTime") ),
+  (target > "velocity") := nextVelocity( (target), ("deltaTime") );
+
+// body v2
+(body) {
+  ^ (transformable);
+  > "static" = boolean: false;
+  > "velocity" = vector3;
+  > "acceleration" = vector3;
+  > "rotationVelocity" = vector3;
+  > "rotationAcceleration" = vector3;
+
+  update(target, deltaTime) ->
+    ([target] > "position") := nextPosition( target, deltaTime ),
+    ([target] > "velocity") := nextVelocity( target, deltaTime );
+}
+
+nextVelocity("body"-body, "deltaTime"-number) = ("body" > velocity) + ("deltaTime") * ("body" > acceleration);
+nextPosition("body"-body, "deltaTime"-number) = 0.5 + ("deltaTime") * ("body" > velocity) + squared("deltaTime") * ("body" > acceleration);
+
+
+
+
+(world) {
+  update(deltaTime: number) =>
+    (> body - static == false) -> update(deltaTime);
+}

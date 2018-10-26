@@ -1,0 +1,18 @@
+
+
+// GRAMMAR
+
+
+
+// BUILT-IN TYPES
+(number) ^ (primitive)
+(string) ^ (primitive)
+(boolean) ^ (primitive)
+
+(3.14) ^ (number)
+(true) ^ (boolean)
+("foo") ^ (string)
+
+
+
+// TEST AREA

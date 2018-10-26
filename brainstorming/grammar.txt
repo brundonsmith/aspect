@@ -1,0 +1,32 @@
+
+// selectors
+<selector> ::= "(" <selector-expression> ")"
+<selector-expression> ::= <selector-atom> | <selector-expression> "-" <selector-expression>
+<selector-atom> ::= <selector-name> | <selector-class>
+<selector-name> ::= """ <identifier> """
+<selector-class> ::= <identifier>
+
+// literals
+<literal> ::= <boolean-literal> | <number-literal> | <string-literal> | <set-literal>
+<boolean-literal> = "true" | "false"
+<number-literal> = <number>
+<string-literal> = """ .* """
+<set-literal> = ???
+
+<expression> ::= <literal> | <selector> | <function-invocation> | ???
+
+// aspects
+<inheritance> ::= <selector> "^" <selector>  // (foo) ^ (bar)
+<declaration> ::= <selector> "=" <literal>  // (foo) = 12
+<function-definition> ::= <identifier> "(" <args-definition> ")" "=" <expression>  // myFunc(param1: (number)) = param1 * 2
+<function-invocation> ::= <identifier> "(" <args-invocation> ")"                   // myFunc(12)
+<event-handler> ::= <identifier> "(" <args-definition> ")" "->" <selector> "=>" <event-sequence>  // collide(other: (body)) -> (body) =>
+                                                                                                  //     (target > "wasHit") = true,
+                                                                                                  //     explode(100) -> (other)
+<event-sequence> ::= <event> | <event-sequence> "," <event-sequence>
+<event> ::= <assignment> | <event-invocation>
+<assignment> ::= <selector> ":=" <expression>
+<event-invocation> ::= <identifier> "(" <args-invocation> ")" "->" <selector>
+
+<args-definition> ::= <identifier> ":" <selector> | <args-definition> "," <args-definition>
+<args-invocation> ::= <expression> | <args-invocation> "," <args-invocation>

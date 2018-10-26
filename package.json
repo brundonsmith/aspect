@@ -1,0 +1,19 @@
+{
+  "name": "aspect",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "tsc:lib": "tsc ./library/index.ts",
+    "tsc:tok": "tsc ./tokenizer/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Brandon Smith",
+  "license": "ISC",
+  "dependencies": {
+    "mobx": "^5.1.2"
+  },
+  "devDependencies": {
+    "typescript": "^3.1.3"
+  }
+}
