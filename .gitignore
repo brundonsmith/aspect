@@ -1,2 +1,3 @@
 node_modules
 library2/*.js
+library2/*.js.map

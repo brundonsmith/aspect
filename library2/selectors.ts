@@ -1,15 +1,94 @@
 
-import { AspectObject, Selector, DirectSelector } from './types';
-import { parentOf } from './world';
+import { AspectObject, Selector, DirectSelector, ObjectSpace } from './types';
+import { parentOf } from './space';
 
-const DIRECT_CHILD_CONJUNCTION = '>'
-const DESCENDANT_CONJUNCTION = '|'
+export { isDirect, finalDirectName, withoutFinalDirectClause, matchesSelector }
 
-const NAME_PREFIX = '#'
-const TYPE_PREFIX = '.'
+function isDirect(selector: Selector) {
+    let tokens = tokenized(selector);
+    let lastToken = tokens[tokens.length - 1];
+
+    return lastToken != null && 
+           lastToken[0] === DIRECT_CHILD_CONJUNCTION && 
+           lastToken[1].name != null
+}
+
+function finalDirectName(selector: DirectSelector) {
+    let tokens = tokenized(selector);
+    let lastToken = tokens[tokens.length - 1];
+
+    if(lastToken != null && lastToken[1].name != null) {
+        return lastToken[1].name;
+    } else {
+        return undefined;
+    }
+}
+
+function withoutFinalDirectClause(selector: DirectSelector): Selector {
+    if(isDirect(selector)) {
+        let tokens = tokenized(selector);
+        return serialized(tokens.slice(0, tokens.length - 1));
+    } else {
+        return selector;
+    }
+}
+
+function matchesSelector(space: ObjectSpace, obj: AspectObject, selector: Selector) {
+    let tokens = tokenized(selector).slice().reverse();
+
+    // starting with lowermost selector
+    let focalObj: AspectObject|null = obj;
+    let i = 0;
+    while(i < tokens.length && focalObj != null) {
+        let conjunction = tokens[i][0];
+        let segment = tokens[i][1];
+
+        if(!matchesSelectorSegment(focalObj, segment)) {
+            if(conjunction === DIRECT_CHILD_CONJUNCTION || conjunction == null) {
+                return false;
+            }
+            if(conjunction === DESCENDANT_CONJUNCTION) {
+                focalObj = parentOf(space, focalObj);
+            }
+        } else {
+            i++;
+
+            if(conjunction === DIRECT_CHILD_CONJUNCTION || conjunction === DESCENDANT_CONJUNCTION) {
+                focalObj = parentOf(space, focalObj);
+            }
+        }
+    }
+
+    // terminated early
+    if(i < tokens.length - 1) {
+        return false;
+    // survived all selector segments
+    } else {
+        return true;
+    }
+}
 
 // no child/descendent selectors
-export function matchesSelectorSegment(obj: AspectObject, selectorSegment: Selector) {
+function matchesSelectorSegment(obj: AspectObject, selectorToken: SegmentObj) {
+    return (selectorToken.name == null || obj.name === selectorToken.name) && 
+            selectorToken.type.every(t => obj.type.includes(t));
+}
+
+function tokenized(selector: Selector): Array<[ string, SegmentObj ]> {
+    let segmentExp = /[\s]*([>|])?[\s]*([a-z0-9-#.]+)/gi;    
+    let matchResults = [];
+    let res;
+    while(res = segmentExp.exec(selector)) {
+        matchResults.push(res);
+    }
+    
+    return matchResults.map(segment => [ 
+        segment[1], // conjunction
+        tokenizedSegment(segment[2]) // matcher
+    ] as [string, SegmentObj] );
+}
+
+function tokenizedSegment(selectorSegment: Selector): SegmentObj {
     let name = null;
     let type = [];
 
@@ -24,77 +103,34 @@ export function matchesSelectorSegment(obj: AspectObject, selectorSegment: Selec
         }
     }
 
-    return (name == null || obj.name === name) && 
-            type.every(t => obj.type.includes(t));
+    return {
+        name,
+        type
+    }
 }
 
-// with child/descendent selectors
-export function matchesSelector(obj: AspectObject, selector: Selector) {
-    let results = [];
-
-    let exp = /[\s]*([>|])?[\s]*([a-z0-9-#.]+)/gi;
-    let res;
-    while(res = exp.exec(selector)) {
-        results.push(res);
-    }
-    results.reverse();
-
-    // starting with lowermost selector
-    let focalObj: AspectObject|null = obj;
-    let i = 0;
-    while(i < results.length && focalObj != null) {
-        let conjunction = results[i][1];
-        let segment = results[i][2];
-
-        if(!matchesSelectorSegment(focalObj, segment)) {
-            if(conjunction === DIRECT_CHILD_CONJUNCTION || conjunction == null) {
-                return false;
-            }
-            if(conjunction === DESCENDANT_CONJUNCTION) {
-                focalObj = parentOf(focalObj);
-            }
-        } else {
-            i++;
-
-            if(conjunction === DIRECT_CHILD_CONJUNCTION || conjunction === DESCENDANT_CONJUNCTION) {
-                focalObj = parentOf(focalObj);
-            }
+/** Convert tokens back into selector string */
+function serialized(tokens: Array<[ string, SegmentObj ]>): string {
+    return tokens.map(token => {
+        let segment = '';
+        if(token[0]) {
+            segment += ` ${token[0]} `;
         }
-    }
-
-    // terminated early
-    if(i < results.length - 1) {
-        return false;
-    // survived all selector segments
-    } else {
-        return true;
-    }
+        if(token[1].name) {
+            segment += `${NAME_PREFIX}${token[1].name}`
+        }
+        token[1].type.slice().sort().forEach(type => segment += `${TYPE_PREFIX}${type}`)
+        return segment;
+    }).join('')
 }
 
-export function isDirect(selector: Selector) {
-    let results = [];
-    let exp = /[\s]*([>|])?[\s]*([a-z0-9-#.]+)/gi;
-    let res;
-    while(res = exp.exec(selector)) {
-        results.push(res);
-    }
-
-    return results.length > 0 && 
-           results[results.length - 1][1] === DIRECT_CHILD_CONJUNCTION && 
-           results[results.length - 1][2].includes(NAME_PREFIX)
+type SegmentObj = {
+    name: string|null,
+    type: Array<string>
 }
 
-export function finalDirectName(selector: DirectSelector) {
-    let lastSegment = selector.substr(selector.lastIndexOf(DIRECT_CHILD_CONJUNCTION) + 1);
-    let match = lastSegment.match(/#[a-z0-9-]+/gi);
+const DIRECT_CHILD_CONJUNCTION = '>'
+const DESCENDANT_CONJUNCTION = '|'
 
-    if(match != null && match[0] != null) {
-        return match[0].substr(1);
-    } else {
-        return undefined;
-    }
-}
-
-export function withoutFinalDirectClause(selector: DirectSelector): Selector {
-   return selector.substr(0, selector.lastIndexOf(DIRECT_CHILD_CONJUNCTION));
-}
+const NAME_PREFIX = '#'
+const TYPE_PREFIX = '.'

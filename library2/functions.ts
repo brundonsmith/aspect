@@ -1,7 +1,7 @@
 
-import { AspectObject, AspectFunctionBody } from './types';
+import { AspectFunctionBody, AspectObjectLiteral } from './types';
 
-export function evaluateFunctionInner(func: AspectFunctionBody, args: Array<Array<AspectObject>>): Array<AspectObject> {
+export function evaluateFunctionInner(func: AspectFunctionBody, args: Array<Array<AspectObjectLiteral>>): Array<AspectObjectLiteral> {
     return permutations(args).map(argSet => func(...argSet));
 }
 

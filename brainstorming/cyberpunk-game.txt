@@ -1,0 +1,86 @@
+
+// utilities
+.vector3 {
+    #x = 0
+    #y = 0
+    #z = 0
+}
+
+add([.vector3] vec1, [.vector3] vec2) = .vector3 
+                                        #x: vec1 > #x + vec2 > #x,
+                                        #y: vec1 > #y + vec2 > #y,
+                                        #z: vec1 > #z + vec2 > #z
+                                    
+
+flatMultiply([.vector3] vec1, [.vector3] vec2) = .vector3:
+                                                #x: vec1 > #x * vec2 > #x
+                                                #y: vec1 > #y * vec2 > #y
+                                                #z: vec1 > #z * vec2 > #z
+                                                
+
+.obj {
+    #position = .vector3
+}
+
+.damageable {
+    #durability = 10
+    
+    damage(target, amount) ->
+        this > #durability := ('${this} > #durability') - amount
+}
+
+// buildings
+.building ^ .obj
+.building ^ .damageable
+.building-piece ^ .obj
+.building {
+
+    .building-piece {
+        #position = .vector3
+        #dimensions = .vector3:
+                        #x: 2
+                        #y: 1
+                        #z: 2
+    }
+}
+
+// generates all combinations?
+corners() = .vector3:
+                #x: [-1, 1]
+                #y: [-1, 1]
+                #z: [-1, 1]
+
+vertices([building-piece] thePiece) = add( thePiece.('> #position'), flatMultiply(thePiece.('> #dimensions'), corners()) )
+vertices([building] theBuilding) = vertices(theBuilding.('> building-piece'))
+
+
+
+// agents
+.agent ^ .damageable
+.agent {
+    -> moveForward(target, [.number] amount)
+        this == target ?
+            this > #position := .vector3: [ #z: amount ]
+    -> moveBack(target, amount)
+        this == target ?
+            this > #position := .vector3 [ #z: -amount ]
+    -> moveLeft(target, amount)
+        this == target ?
+            this > #position := .vector3 [ #x: -amount ]
+    -> moveRight(target, amount)
+        this == target ?
+            this > #position := .vector3 [ #x: amount ]
+}
+
+.player {
+    -> keydown(target, [.string] key)
+        cond
+            key == 'Left': 
+                moveLeft(this, 1) ->
+            key == 'Right': 
+                moveRight(this, 1) ->
+            key == 'Up': 
+                moveForward(this, 1) ->
+            key == 'Down': 
+                moveBack(this, 1) ->
+}

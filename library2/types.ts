@@ -1,4 +1,6 @@
 
+export type ObjectSpace = Array<AspectObject>;
+
 export type PrimitiveValue = string|number|boolean|null;
 export type AspectObject = {
     id: number,
@@ -8,17 +10,17 @@ export type AspectObject = {
     value?: PrimitiveValue,
 };
 
-export type AspectObjectTemplate = {
+export type AspectObjectLiteral = {
     name?: string,
     type?: Array<string>,
     value?: PrimitiveValue,
-    children?: Array<AspectObjectTemplate>
+    children?: Array<AspectObjectLiteral>
 };
 
 export type Selector = string;
 export type DirectSelector = string;
 
-export type AspectFunctionBody = (...args: Array<AspectObject>) => AspectObject;
+export type AspectFunctionBody = (...args: Array<AspectObjectLiteral>) => AspectObjectLiteral;
 export type AspectFunction = {
     name: string,
     signature: Array<Selector>,
@@ -27,7 +29,7 @@ export type AspectFunction = {
 
 export type Aspect = {
     selector: DirectSelector,
-    value: AspectObjectTemplate,
+    value: AspectObjectLiteral,
 };
 
 export type EventListener = {
@@ -38,5 +40,5 @@ export type EventListener = {
 export type Event = {
     name: string,
     targetId: number,
-    args: Array<AspectObjectTemplate>,
+    args: Array<AspectObjectLiteral>,
 };
