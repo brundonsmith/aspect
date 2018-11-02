@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "try": "npm run tsc:lib && node --inspect library2/index",
-    "tsc:lib": "tsc --project ./library2/tsconfig.json",
+    "try": "npm run tsc:lib && node --inspect lib/index",
+    "tsc:lib": "tsc --project ./lib/tsconfig.json",
     "tsc:tok": "tsc ./tokenizer/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

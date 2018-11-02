@@ -7,11 +7,11 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "library2",
-            "program": "${workspaceFolder}/library2/index.js",
+            "name": "lib",
+            "program": "${workspaceFolder}/lib/index.js",
             "preLaunchTask": "build",
             "outFiles": [
-                "${workspaceFolder}/library2/**/*.js"
+                "${workspaceFolder}/lib/**/*.js"
             ]
         }
     ]
