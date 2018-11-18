@@ -3,15 +3,18 @@ Array.prototype.flat = function() {
     return this.reduce((all, segment) => all.concat(segment), [])
 }
 
-import { AspectObject, AspectObjectLiteral, AspectFunction, Aspect, EventListener, Event } from './types';
+import { AspectObject, AspectObjectLiteral, AspectFunction, Aspect, ExtensionAspect, 
+    EventListener, Event, Selector, ObjectSpace } from './types';
 import { matchesSelector, isDirect } from './selectors';
 import { parentOf, descendsFrom, destructureObject, objectIsPrimitive } from './space';
 
-export { state, functions, aspects, eventListeners, addObject, overwriteObject, addAspect, addFunction, addEventListener, triggerEvent }
+export { state, functions, aspects, eventListeners, addObject, overwriteObject, 
+    addExtensionAspect, addAspect, addFunction, addEventListener, triggerEvent }
 
-const state: Array<AspectObject> = [ ]
+const state: ObjectSpace = [ ]
 const functions: Array<AspectFunction> = [];
 const aspects: Array<Aspect> = [];
+const extensions: Array<ExtensionAspect> = [];
 const eventListeners: Array<EventListener> = [];
 
 // ----------------------------------------------------------------------------------------------------
@@ -33,6 +36,9 @@ function overwriteObject(id: number, obj: AspectObjectLiteral) {
 }
 function addFunction(func: AspectFunction) {
     functions.push(func);
+}
+function addExtensionAspect(aspect: ExtensionAspect) {
+    extensions.push(aspect); // TODO: Utilize these
 }
 function addAspect(aspect: Aspect) {
     if(isDirect(aspect.selector)) {

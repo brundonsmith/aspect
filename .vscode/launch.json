@@ -8,7 +8,7 @@
             "type": "node",
             "request": "launch",
             "name": "lib",
-            "program": "${workspaceFolder}/lib/index.js",
+            "program": "${workspaceFolder}/brainstorming/library_test.js",
             "preLaunchTask": "build",
             "outFiles": [
                 "${workspaceFolder}/lib/**/*.js"

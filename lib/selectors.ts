@@ -2,7 +2,7 @@
 import { AspectObject, Selector, DirectSelector, ObjectSpace } from './types';
 import { parentOf } from './space';
 
-export { isDirect, finalDirectName, withoutFinalDirectClause, matchesSelector }
+export { isDirect, finalDirectName, withoutFinalDirectClause, matchesSelector, tokenized }
 
 function isDirect(selector: Selector) {
     let tokens = tokenized(selector);
@@ -89,7 +89,7 @@ function tokenized(selector: Selector): Array<[ string, SegmentObj ]> {
 }
 
 function tokenizedSegment(selectorSegment: Selector): SegmentObj {
-    let name = null;
+    let name = undefined;
     let type = [];
 
     let exp = /([#.])([a-z0-9\-]+)/gi;
@@ -125,7 +125,7 @@ function serialized(tokens: Array<[ string, SegmentObj ]>): string {
 }
 
 type SegmentObj = {
-    name: string|null,
+    name: string|undefined,
     type: Array<string>
 }
 

@@ -6,7 +6,7 @@
         {
             "label": "build",
             "type": "typescript",
-            "tsconfig": "library2/tsconfig.json",
+            "tsconfig": "lib/tsconfig.json",
             "problemMatcher": [
                 "$tsc"
             ],

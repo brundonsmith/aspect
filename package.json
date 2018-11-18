@@ -7,11 +7,13 @@
     "try": "npm run tsc:lib && node --inspect lib/index",
     "tsc:lib": "tsc --project ./lib/tsconfig.json",
     "tsc:tok": "tsc ./tokenizer/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "jison": "(cd compiler ; jison grammar.json ; node index.js)"
   },
   "author": "Brandon Smith",
   "license": "ISC",
   "dependencies": {
+    "jison": "^0.4.18",
     "mobx": "^5.1.2"
   },
   "devDependencies": {

@@ -32,6 +32,11 @@ export type Aspect = {
     value: AspectObjectLiteral,
 };
 
+export type ExtensionAspect = {
+    selector: DirectSelector,
+    parentSelector: AspectObjectLiteral,
+};
+
 export type EventListener = {
     selector: Selector,
     triggers: Array<Event>,
