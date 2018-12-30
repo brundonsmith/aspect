@@ -1,0 +1,92 @@
+{
+    "lex": {
+        "rules": [
+           ["[\\s]*[\\u000A][\\s]*",   "return 'LINEBREAK';"],
+           ["[0-9]+(?:\\.[0-9]+)?",    "return 'NUMBER';"],
+           ["'[^']*'",                 "return 'STRING';"],
+           ["true|false",              "return 'BOOLEAN';"],
+           ["\\(",                     "return '(';"],
+           ["\\)",                     "return ')';"],
+           ["\\[",                     "return '[';"],
+           ["\\]",                     "return ']';"],
+           [",",                       "return ',';"],
+           ["\\+",                     "return '+';"],
+           ["-",                       "return '-';"],
+           ["\\*",                     "return '*';"],
+           ["\\/",                     "return '/';"],
+           ["&&",                      "return 'AND';"],
+           ["\\|\\|",                  "return 'OR';"],
+           [":=",                      "return 'ASSIGNMENT';"],
+           ["=",                       "return 'EQUALS';"],
+           [":",                       "return ':';"],
+           ["\\^",                     "return 'EXTENDS';"],
+           ["=>",                      "return 'DIRECTEVENT';"],
+           ["->",                      "return 'INDIRECTEVENT';"],
+           ["[#\\.][a-zA-Z0-9\\-]+",   "return 'SELECTORSEGMENT';"],
+           ["[>|]",                    "return 'SELECTORCOMBINATOR';"],
+           ["[a-zA-Z]+",               "return 'IDENTIFIER';"],
+           ["\\s+",                    "/* skip whitespace */"],
+           ["$",                       "return 'EOF';"]
+        ]
+    },
+
+    "bnf": {
+        "expressions":  [[ "declarations EOF",                    "return `const A = require('../lib');\\n` + $1;"  ]],
+        "declarations": [[ "declarations LINEBREAK declaration",  "$$ = `${$1}\\n${$3}`;" ],
+                         [ "declaration",                         "$$ = `${$1}`;" ]],
+
+        "declaration": [[ "aspect",        "$$ = `${$1}`;" ],
+                        [ "function",      "$$ = `${$1}`;" ],
+                        [ "eventlistener", "$$ = `${$1}`;" ]],
+                        
+
+        "aspect":   [[ "selector EQUALS literal", "$$ = `A.addAspect({ selector: '${$1}', value: ${$3} })`;" ]],
+
+        "function": [[ "IDENTIFIER ( args ) EQUALS expression", "$$ = `A.addFunction({ name: '${$1}', signature: [ ${$3.map(arg => `'${arg.selector}'`).join(', ')} ], body: (${$3.map(arg => arg.name).join(', ')}) => ${$6} })`;" ]],
+        "args": [[ "args , arg", "$$ = $1.concat($3);" ],
+                 [ "arg",        "$$ = [ $1 ];" ]],
+        "arg" : [[ "SELECTORSEGMENT : IDENTIFIER", "$$ = { selector: `${$1}`, name: `${$3}` };" ]],
+
+        "eventlistener": [[ "directlistener",   "$$ = `${$1}`;" ],
+                          [ "indirectlistener", "$$ = `${$1}`;" ]],
+        "directlistener":   [[ "globalevent DIRECTEVENT effects",   "$$ = `A.addEventListener({ name: '${$1}', direct: true, effects: [ ${$4} ] })`;"],
+                             [ "selector IDENTIFIER DIRECTEVENT effects",   "$$ = `A.addEventListener({ selector: '${$1}', name: '${$2}', direct: true, effects: [ ${$4} ] })`;"]],
+        "indirectlistener": [[ "selector IDENTIFIER INDIRECTEVENT effects", "$$ = `A.addEventListener({ selector: '${$1}', name: '${$2}', direct: false, effects: [ ${$4} ] })`;" ]],
+        "effects": [[ "effects , eventtrigger", "$$ = `${$1}, ${$3}`;" ],
+                    [ "eventtrigger",           "$$ = `${$1}`;" ]],
+        "eventtrigger": [[ "IDENTIFIER ( passedargs ) DIRECTEVENT selector", "$$ = `{ selector: '${$6}', name: '${$1}', args: [ ${$3} ] }`;" ]],
+
+
+        "dereference": [[ "" ]],
+
+        "selector": [[ "selector SELECTORCOMBINATOR SELECTORSEGMENT", "$$ = `${$1} ${$2} ${$3}`;" ],
+                     [ "SELECTORSEGMENT",                             "$$ = `${$1}`;" ],
+                     [ "IDENTIFIER selector",                         "$$ = `${$1} ${$2}`;" ]],
+
+
+
+        "expression": [[ "literal",            "$$ = `${$1}`;" ],
+                       [ "functioncall",       "$$ = `${$1}`;" ],
+                       [ "IDENTIFIER",         "$$ = `${$1}`;" ],
+                       [ "operatorexpression", "$$ = `${$1}`;" ]],
+
+        "functioncall": [[ "IDENTIFIER ( passedargs )", "$$ = `${$1}(${$3})`;" ]],
+        "passedargs": [[ "passedargs , expression",     "$$ = `${$1}, ${$3}`;" ],
+                       [ "expression",                  "$$ = `${$1}`;" ]],
+
+        "literal": [[ "primitiveliteral",    "$$ = `${$1}`;" ],
+                    [ "objectliteral",       "$$ = `${$1}`;" ]],
+        
+        "primitiveliteral": [[ "SELECTORSEGMENT : primitivevalue", "$$ = `{ selector: '${$1}', value: ${$3} }`;" ],
+                             [ "primitivevalue",                   "$$ = `${$1}`;"]],
+        "primitivevalue": [  [ "NUMBER",                           "$$ = `${$1}`;" ],
+                             [ "STRING",                           "$$ = `${$1}`;" ],
+                             [ "BOOLEAN",                          "$$ = `${$1}`;" ]],
+
+        "objectliteral":  [[ "SELECTORSEGMENT : [ objectchildren ]",  "$$ = `{ selector: '${$1}', children: [ ${4} ] }`;" ],
+                           [ "SELECTORSEGMENT",                       "$$ = `{ selector: '${$1}', children: [ ] }`;" ]],
+        "objectchildren": [[ "objectchildren , literal", "$$ = `${$1}, ${$3}`;" ],
+                           [ "literal",                  "$$ = `${$1}`;" ]]
+
+    }
+}

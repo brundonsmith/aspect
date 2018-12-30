@@ -1,0 +1,6 @@
+- star selectors
+- selector literals (strings?)
+- events should probably live in computed state
+- selector scope by block
+- selector specificity
+- global events

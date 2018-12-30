@@ -1,8 +1,21 @@
 
 import { AspectObject, Selector, DirectSelector, ObjectSpace } from './types';
-import { parentOf } from './space';
+import { parent } from './space';
+import { last, elet } from './misc';
 
-export { isDirect, finalDirectName, withoutFinalDirectClause, matchesSelector, tokenized }
+export { name, type, isDirect, finalDirectName, withoutFinalDirectClause, matchesSelector, tokenized }
+
+const name = (selector: Selector): string|undefined => 
+    elet(last(tokenized(selector)), segment => 
+        segment == null
+            ? undefined
+            : segment[1].name)
+
+const type = (selector: Selector): Array<string> => 
+    elet(last(tokenized(selector)), segment => 
+        segment == null
+            ? []
+            : segment[1].type)
 
 function isDirect(selector: Selector) {
     let tokens = tokenized(selector);
@@ -48,13 +61,13 @@ function matchesSelector(space: ObjectSpace, obj: AspectObject, selector: Select
                 return false;
             }
             if(conjunction === DESCENDANT_CONJUNCTION) {
-                focalObj = parentOf(space, focalObj);
+                focalObj = parent(space, focalObj);
             }
         } else {
             i++;
 
             if(conjunction === DIRECT_CHILD_CONJUNCTION || conjunction === DESCENDANT_CONJUNCTION) {
-                focalObj = parentOf(space, focalObj);
+                focalObj = parent(space, focalObj);
             }
         }
     }
@@ -70,8 +83,8 @@ function matchesSelector(space: ObjectSpace, obj: AspectObject, selector: Select
 
 // no child/descendent selectors
 function matchesSelectorSegment(obj: AspectObject, selectorToken: SegmentObj) {
-    return (selectorToken.name == null || obj.name === selectorToken.name) && 
-            selectorToken.type.every(t => obj.type.includes(t));
+    return (selectorToken.name == null || name(obj.selector) === selectorToken.name) && 
+            selectorToken.type.every(t => type(obj.selector).includes(t));
 }
 
 function tokenized(selector: Selector): Array<[ string, SegmentObj ]> {

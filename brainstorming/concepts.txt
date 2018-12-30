@@ -1,0 +1,16 @@
+
+Base statements:
+- Aspects (selector = value)
+    - Primitives
+    - Objects
+    - Build-time expressions
+- Functions (name, args with types (including possibly selectors) = expression)
+- Event listeners
+    - Direct listener (selector name -> event args with types ("this" is implicit), list of events to trigger)
+    - Indirect (subtree) listener (same as above but with =>)
+
+Expressions:
+- Within context of a function, args can be used as-is
+- New selectors, or selector literals, can be used by surrounding with special syntax (square brackets?)
+- Way to restrict the selection scope of a function?
+    - By putting between curly braces?

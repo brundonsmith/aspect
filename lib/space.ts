@@ -1,5 +1,5 @@
 import { ObjectSpace, AspectObject, AspectObjectLiteral, Aspect, Selector, AspectFunction } from './types';
-import { matchesSelector, withoutFinalDirectClause, finalDirectName } from './selectors';
+import { matchesSelector, withoutFinalDirectClause, finalDirectName, type, name } from './selectors';
 import { evaluateFunctionInner } from './functions';
 
 export function reconstructedSpace(space: ObjectSpace): Array<AspectObjectLiteral> {
@@ -7,8 +7,7 @@ export function reconstructedSpace(space: ObjectSpace): Array<AspectObjectLitera
 }
 function reconstructedObject(space: ObjectSpace, root: AspectObject): AspectObjectLiteral {
     return {
-        name: root.name || undefined,
-        type: root.type,
+        selector: root.selector,
         value: root.value,
         children: space.filter(other => other.parent === root.id).map(obj => reconstructedObject(space, obj))
     }
@@ -30,31 +29,33 @@ function virtualChildren(space: ObjectSpace, aspects: Array<Aspect>, parentObj: 
                             matchesSelector(space, parentObj, withoutFinalDirectClause(aspect.selector)) &&
                             !space.some(obj => 
                                 obj.parent === parentObj.id && 
-                                obj.name === finalDirectName(aspect.selector)))
+                                name(obj.selector) === finalDirectName(aspect.selector)))
                   .map(aspect => ({ 
                         ...{ name: finalDirectName(aspect.selector) }, 
                         ...aspect.value 
                   }))
 }
 
-export function select(space: ObjectSpace, selector: Selector): ObjectSpace {
-    return space.filter(obj => matchesSelector(space, obj, selector));
+export function select(space: ObjectSpace, selector: Selector, ancestor?: AspectObject): ObjectSpace {
+    return space.filter(obj => (ancestor == null || descendsFrom(space, obj, ancestor.id)) 
+                            && matchesSelector(space, obj, selector));
 }
 
-export function parentOf(space: ObjectSpace, obj: AspectObject) {
+/** Get the parent of obj within space */
+export function parent(space: ObjectSpace, obj: AspectObject) {
     return space.find(other => other.id === obj.parent) || null;
 }
 
 /** Whether this obejct is a string, number, or boolean type */
 export function objectIsPrimitive(obj: AspectObject|AspectObjectLiteral) {
-    return ['string', 'number', 'boolean'].some(t => typeof obj.value === t || (obj.type != null && obj.type.includes(t)));
+    return ['string', 'number', 'boolean'].some(t => typeof obj.value === t || type(obj.selector).includes(t));
 }
 
 export function descendsFrom(space: ObjectSpace, obj: AspectObject, parentId: number) {
     let focal: AspectObject|null = obj;
     while(focal != null) {
         if(focal.id === parentId) return true;
-        focal = parentOf(space, focal);
+        focal = parent(space, focal);
     }
     return false;
 }
@@ -67,20 +68,19 @@ export function destructureObject(obj: AspectObjectLiteral, parent: number|null 
     let newObj = {
         id: id,
         parent: parent,
-        name: obj.name || null,
-        type: obj.type || [],
+        selector: obj.selector,
         value: obj.value
     };
 
     // allow implicit primitive typing
     if(newObj.value != null) {
         let primitiveType = typeof newObj.value;
-        if(!newObj.type.includes(primitiveType)) {
-            newObj.type.push(primitiveType);
+        if(!type(newObj.selector).includes(primitiveType)) {
+            type(newObj.selector).push(primitiveType);
         }
     }
 
-    if(partialSpace.some(other => other.parent === parent && other.name === obj.name)) {
+    if(partialSpace.some(other => other.parent === parent && name(other.selector) === name(obj.selector))) {
         throw new TypeError(`Can't create object with same parent and name as another object: \n${JSON.stringify(newObj)}`)
     } else {
         partialSpace.push(newObj);
@@ -103,4 +103,8 @@ export function evaluateFunction(space: ObjectSpace, functions: Array<AspectFunc
                     )
                     .map(selection => selection.map(obj => reconstructedObject(space, obj))) // construct literals
     )
+}
+
+export function equals() {
+    
 }

@@ -5,14 +5,12 @@ export type PrimitiveValue = string|number|boolean|null;
 export type AspectObject = {
     id: number,
     parent: number|null,
-    name: string|null,
-    type: Array<string>,
+    selector: Selector,
     value?: PrimitiveValue,
 };
 
 export type AspectObjectLiteral = {
-    name?: string,
-    type?: Array<string>,
+    selector: Selector,
     value?: PrimitiveValue,
     children?: Array<AspectObjectLiteral>
 };
@@ -20,12 +18,12 @@ export type AspectObjectLiteral = {
 export type Selector = string;
 export type DirectSelector = string;
 
-export type AspectFunctionBody = (...args: Array<AspectObjectLiteral>) => AspectObjectLiteral;
 export type AspectFunction = {
     name: string,
     signature: Array<Selector>,
     body: AspectFunctionBody
 };
+export type AspectFunctionBody = (...args: Array<AspectObjectLiteral>) => AspectObjectLiteral;
 
 export type Aspect = {
     selector: DirectSelector,
@@ -39,11 +37,13 @@ export type ExtensionAspect = {
 
 export type EventListener = {
     selector: Selector,
-    triggers: Array<Event>,
+    direct?: boolean,
+    name: string,
+    effects: Array<Event>,
 };
 
 export type Event = {
+    selector: string,
     name: string,
-    targetId: number,
     args: Array<AspectObjectLiteral>,
 };

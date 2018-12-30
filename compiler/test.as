@@ -11,5 +11,8 @@ add([.vector3] vec1, [.vector3] vec2) = .vector3
 .obj > #position = .vector3
 
 .damageable > #durability = 10
-.damageable -> damage(target: [.damageable], amount: [.number])
+.damageable -> damage(.number: amount)
     target > #durability := target > #durability - amount
+
+
+findThingsWithin(parentObj: )

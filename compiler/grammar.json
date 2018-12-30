@@ -1,7 +1,7 @@
 {
     "lex": {
         "rules": [
-           ["\\s+",                    "/* skip whitespace */"],
+           ["[\\s]*[\\u000A][\\s]*",   "return 'NEWLINE';"],
            ["[0-9]+(?:\\.[0-9]+)?",    "return 'NUMBER';"],
            ["'[^']*'",                 "return 'STRING';"],
            ["true|false",              "return 'BOOLEAN';"],
@@ -13,60 +13,68 @@
            ["\\(",                     "return '(';"],
            [",",                       "return ',';"],
            ["\\)",                     "return ')';"],
+           [":=",                      "return 'ASSIGN';"],
            ["=",                       "return 'EQUALS';"],
-           [":",                       "return 'LITERALCONTENTS';"],
+           [":",                       "return ':';"],
            ["\\^",                     "return 'EXTENDS';"],
-           ["->",                      "return 'EVENT';"],
+           ["->",                      "return 'EVENTDETECTED';"],
+           ["=>",                      "return 'EVENTRECEIVED';"],
            ["[#\\.][a-zA-Z0-9\\-]+",   "return 'selectorsegment';"],
            ["[>|]",                    "return 'SELECTORCOMBINATOR';"],
+           ["[a-zA-Z]+",               "return 'IDENTIFIER';"],
+           ["\\s+",                    "/* skip whitespace */"],
            ["$",                       "return 'EOF';"]
         ]
     },
 
-    "operators": [
-        ["left", "+", "-"],
-        ["left", "*", "/"],
-        ["left", "UMINUS"]
-    ],
-
     "bnf": {
         "expressions" :[[ "aspects EOF",   "return `const A = require('../lib');\\n` + $1;"  ]],
 
-        "aspects" :[[ "aspects aspect", "$$ = `${$1}\\n${$2}`;" ],
-                    [ "aspect",         "$$ = `${$1}`;" ]],
+        "aspects" :[[ "aspects NEWLINE aspect", "$$ = `${$1}\\n${$2}`;" ],
+                    [ "aspect",                 "$$ = `${$1}`;" ]],
         
-        "aspect" :[[ "valueaspect", "$$ = $1;" ],
-                   [ "eventaspect", "$$ = $1;" ]],
 
+        "aspect" :[[ "extensionaspect",     "$$ = $1;" ],
+                   [ "valueaspect",         "$$ = $1;" ],
+                   [ "eventaspect",         "$$ = $1;" ],
+                   [ "eventdetectedaspect", "$$ = $1;" ],
+                   [ "functiondeclaration", "$$ = $1;" ]],
         "extensionaspect" :[[ "selector EXTENDS selector", "$$ = `A.addExtensionAspect({ selector: ${$1}, parentSelector: ${$3} });`" ]],
         "valueaspect" :[[ "selector EQUALS literal", "$$ = `A.addAspect({ selector: ${$1}, value: ${$3} })`;" ]],
-        "eventaspect" :[[ "selector EVENT eventlistener", "$$ = TODO;" ]],
+        "eventaspect" :[[ "selector EVENT eventlistener", "$$ = 'TODO';" ]],
+        "eventdetectedaspect" :[[ "selector EVENTDETECTED functiondeclaration", "$$ = 'TODO';" ]],
+
 
         "selector" :[[ "selector SELECTORCOMBINATOR selectorsegment", "$$ = `'${$1} ${$2} ${$3}'`;" ],
-                     [ "selectorsegment", "$$ = `${$1}`;" ]],
+                     [ "selectorsegment",                             "$$ = `${$1}`;" ]],
         
-        "literal" :[[ "selectorsegment", "$$ = `A.tokenized('${$1}')`" ],
-                    [ "selectorsegment LITERALCONTENTS literalgroup", "/*{ type*/" ],
-                    [ "selectorsegment LITERALCONTENTS literalprimitive", "" ],
-                    [ "literalgroup", "$$ = `{ children: ${$1} }`;" ],
-                    [ "literalprimitive", "$$ = `{ value: ${$1} }`;" ]],
 
+        "literal" :[[ "selectorsegment",                    "$$ = `A.tokenized('${$1}')[0][1]`;" ],
+                    [ "selectorsegment : literalgroup",     "/*{ type*/" ],
+                    [ "selectorsegment : literalprimitive", "$$ = 'TODO';" ],
+                    [ "literalgroup",                       "$$ = `{ children: ${$1} }`;" ],
+                    [ "literalprimitive",                   "$$ = `{ value: ${$1} }`;" ]],
         "literalgroup" :[[ "[literalsequence]", "$$ = `[ ${$1} ]`;" ]],
         "literalsequence" :[[ "literalsequence, literal", "$$ = `${$1}, ${$2}`;" ],
                             [ "literal",                  "$$ = `${$1}`;" ]],
-        "literalprimitive" :[[ "NUMBER", "$$ = $1;" ],
-                             [ "STRING", "$$ = $1;" ],
+        "literalprimitive" :[[ "NUMBER",  "$$ = $1;" ],
+                             [ "STRING",  "$$ = $1;" ],
                              [ "BOOLEAN", "$$ = $1;" ]],
 
-        "e" :[[ "e + e",   "$$ = $1 + $3;" ],
-              [ "e - e",   "$$ = $1 - $3;" ],
-              [ "e * e",   "$$ = $1 * $3;" ],
-              [ "e / e",   "$$ = $1 / $3;" ],
-              [ "e ^ e",   "$$ = Math.pow($1, $3);" ],
-              [ "- e",     "$$ = -$2;", {"prec": "UMINUS"} ],
-              [ "( e )",   "$$ = $2;" ],
-              [ "NUMBER",  "$$ = Number(yytext);" ],
-              [ "E",       "$$ = Math.E;" ],
-              [ "PI",      "$$ = Math.PI;" ]]
+        "functiondeclaration": [[ "IDENTIFIER ( declaredargs ) EQUALS expression", "$$ = `A.addFunction({ name: ${$1}, signature: [ ${$3.map(a => a.selector).join(', ')} ], body: (${$3.map(a => a.name).join(', ')}) => ${$6} })`;" ]],
+        "declaredargs": [[ "declaredargs , declaredarg", "$$ = [ $1 ].concat([ $3 ]).reduce((all, segment) => all.concat(segment), []);" ],
+                         [ "declaredarg",               "$$ = `${$1}`;" ]],
+        "declaredarg": [[ "IDENTIFIER : selector", "$$ = { name: $1, selector: $3 };" ]],
+
+        "functioncall": [[ "IDENTIFIER ( passedargs )", "$$ = 'TODO';" ]],
+        "passedargs": [[ "passedargs , passedarg", "$$ = `${$1}, ${$3}`;"],
+                       [ "passedarg",              "$$ = `${$1}`;" ]],
+        "passedarg": [[ "selector",   "$$ = $1;" ],
+                      [ "expression", "$$ = $1;" ]],
+
+        "expression": [[ "identifier",   "$$ = $1;" ],
+                       [ "functioncall", "$$ = $1;" ],
+                       [ "literal",      "$$ = $1;" ]]
+
     }
 }

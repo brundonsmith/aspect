@@ -4,9 +4,9 @@ Array.prototype.flat = function() {
 }
 
 import { AspectObject, AspectObjectLiteral, AspectFunction, Aspect, ExtensionAspect, 
-    EventListener, Event, Selector, ObjectSpace } from './types';
+    EventListener, Event, ObjectSpace } from './types';
 import { matchesSelector, isDirect } from './selectors';
-import { parentOf, descendsFrom, destructureObject, objectIsPrimitive } from './space';
+import { parent, destructureObject, objectIsPrimitive } from './space';
 
 export { state, functions, aspects, eventListeners, addObject, overwriteObject, 
     addExtensionAspect, addAspect, addFunction, addEventListener, triggerEvent }
@@ -51,28 +51,30 @@ function addEventListener(eventListener: EventListener) {
     eventListeners.push(eventListener);
 }
 function triggerEvent(event: Event) {
-    let target = state.find(obj => obj.id === event.targetId) as AspectObject;
+    let targets = state.filter(obj => matchesSelector(state, obj, event.selector));
 
-    if(event.name === 'assignment') {
-        if(objectIsPrimitive(event.args[0])) {
-            target.value = event.args[0].value;
-        } else {
-            overwriteObject(target.id, event.args[0]);
+    targets.forEach(target => {
+        if(event.name === 'assignment') {
+            if(objectIsPrimitive(event.args[0])) {
+                target.value = event.args[0].value;
+            } else {
+                overwriteObject(target.id, event.args[0]);
+            }
         }
-    }
-
-    processEvent(event, target);
+    
+        processEvent(event, target);
+    })
 }
 
 function processEvent(event: Event, obj: AspectObject) {
 
     // trigger event listeners
-    eventListeners.filter(listener => matchesSelector(state, obj, listener.selector))
-                  .forEach(listener => listener.triggers.forEach(event => triggerEvent(event)))
+    eventListeners.filter(listener => matchesSelector(state, obj, listener.selector) && (!listener.direct || matchesSelector(state, obj, event.selector)))
+                  .forEach(listener => listener.effects.forEach(event => triggerEvent(event)))
 
     // bubble
-    let parent = parentOf(state, obj);
-    if(parent != null) {
-        processEvent(event, parent);
+    let p = parent(state, obj);
+    if(p != null) {
+        processEvent(event, p);
     }
 }
